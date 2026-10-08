@@ -1,0 +1,36 @@
+[package]
+name = "hyperlapse-rs"
+version = "0.1.0"
+edition = "2021"
+authors = ["Zhon <zhon@users.noreply.github.com>"]
+description = "Convert drone DNG RAW files into stabilized hyperlapse videos"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/zhon/hyperlapse-rs"
+keywords = ["hyperlapse", "drone", "video", "stabilization", "dng"]
+categories = ["multimedia::video", "command-line-utilities"]
+
+[dependencies]
+anyhow = "1.0"
+clap = { version = "4.5", features = ["derive", "env"] }
+thiserror = "1.0"
+tempfile = "3.10"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[dev-dependencies]
+assert_cmd = "2.0"
+predicates = "3.0"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+
+[profile.dev]
+opt-level = 0
+debug = true
+
+[features]
+default = []
+testing = []
