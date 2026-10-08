@@ -7,44 +7,46 @@ use std::path::PathBuf;
 pub struct ProcConfig {
     /// Input directory containing DNG files
     pub input_dir: PathBuf,
-    
+
     /// JPEG development directory
     pub jpeg_dir: PathBuf,
-    
+
     /// Output video file path
     pub output_file: PathBuf,
-    
+
     /// Transform file for stabilization
     pub trf_file: PathBuf,
-    
+
     /// Output frame rate
     pub framerate: u32,
-    
-    /// Output resolution
+
+    /// Output resolution width
     pub width: u32,
+
+    /// Output resolution height
     pub height: u32,
-    
+
     /// Encoding CRF
     pub crf: u8,
-    
+
     /// Stabilization preset
     pub preset: StabilizationPreset,
-    
+
     /// Number of frames to process
     pub frame_count: usize,
-    
+
     /// Starting frame number
     pub start_number: u32,
-    
+
     /// Whether to skip RAW development
     pub skip_development: bool,
-    
+
     /// Whether to verify output
     pub verify: bool,
-    
+
     /// Whether to dry run
     pub dry_run: bool,
-    
+
     /// Verbose mode
     pub verbose: bool,
 }
@@ -53,7 +55,7 @@ impl ProcConfig {
     /// Create a processed configuration from base config
     pub fn new(config: &crate::cli::Config) -> Result<Self> {
         let input_dir = &config.input;
-        
+
         if !input_dir.is_dir() {
             return Err(crate::errors::HyperlapseError::InputNotFound(
                 input_dir.display().to_string(),
@@ -137,4 +139,116 @@ pub struct StabilizationParams {
     pub smoothing: u32,
     pub optzoom: u32,
     pub zoom: f64,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    fn create_test_input_dir() -> tempfile::TempDir {
+        let temp_dir = tempfile::tempdir().unwrap();
+        // Create a test DNG file
+        let input_file = temp_dir.path().join("TEST_0001.DNG");
+        std::fs::File::create(&input_file).unwrap();
+        temp_dir
+    }
+
+    #[test]
+    fn test_gentle_stabilization_params() {
+        let temp_dir = create_test_input_dir();
+        let cli_config = crate::cli::Config {
+            input: temp_dir.path().to_path_buf(),
+            output: temp_dir.path().join("test.mp4"),
+            width: 1920,
+            height: 1080,
+            framerate: 24,
+            crf: 18,
+            preset: StabilizationPreset::Gentle,
+            skip_development: false,
+            dry_run: true,
+            verbose: false,
+            no_verify: true,
+            start_number: 1,
+            tag: None,
+        };
+        let proc = ProcConfig::new(&cli_config).unwrap();
+        let params = proc.stabilization_params();
+        assert_eq!(params.shakiness, 1);
+        assert_eq!(params.smoothing, 10);
+        assert_eq!(params.accuracy, 15);
+    }
+
+    #[test]
+    fn test_aggressive_stabilization_params() {
+        let temp_dir = create_test_input_dir();
+        let cli_config = crate::cli::Config {
+            input: temp_dir.path().to_path_buf(),
+            output: temp_dir.path().join("test.mp4"),
+            width: 1920,
+            height: 1080,
+            framerate: 24,
+            crf: 18,
+            preset: StabilizationPreset::Aggressive,
+            skip_development: false,
+            dry_run: true,
+            verbose: false,
+            no_verify: true,
+            start_number: 1,
+            tag: None,
+        };
+        let proc = ProcConfig::new(&cli_config).unwrap();
+        let params = proc.stabilization_params();
+        assert_eq!(params.shakiness, 8);
+        assert_eq!(params.smoothing, 45);
+        assert_eq!(params.accuracy, 15);
+    }
+
+    #[test]
+    fn test_extension_string() {
+        assert_eq!("DNG", "DNG");
+    }
+
+    #[test]
+    fn test_basename_pattern_extraction() {
+        let temp_dir = create_test_input_dir();
+        let cli_config = crate::cli::Config {
+            input: temp_dir.path().to_path_buf(),
+            output: temp_dir.path().join("test.mp4"),
+            width: 1920,
+            height: 1080,
+            framerate: 24,
+            crf: 18,
+            preset: StabilizationPreset::Aggressive,
+            skip_development: false,
+            dry_run: true,
+            verbose: false,
+            no_verify: true,
+            start_number: 1,
+            tag: None,
+        };
+        let proc = ProcConfig::new(&cli_config).unwrap();
+        assert_eq!(proc.basename_pattern(), "TEST");
+    }
+
+    #[test]
+    fn test_proc_config_new_returns_error_for_nonexistent_dir() {
+        let cli_config = crate::cli::Config {
+            input: PathBuf::from("/nonexistent/path/12345"),
+            output: PathBuf::from("/tmp/test.mp4"),
+            width: 1920,
+            height: 1080,
+            framerate: 24,
+            crf: 18,
+            preset: StabilizationPreset::Aggressive,
+            skip_development: false,
+            dry_run: false,
+            verbose: false,
+            no_verify: true,
+            start_number: 1,
+            tag: None,
+        };
+        let result = ProcConfig::new(&cli_config);
+        assert!(result.is_err());
+    }
 }

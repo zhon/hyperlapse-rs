@@ -1,5 +1,5 @@
-use crate::errors::{HyperlapseError, Result};
 use crate::config::{ProcConfig, StabilizationParams};
+use crate::errors::{HyperlapseError, Result};
 use std::path::Path;
 
 /// Find a .pp3 profile that matches the input directory
@@ -46,30 +46,22 @@ pub fn count_dng_files(input_dir: &Path) -> usize {
 }
 
 /// Validate the sequential file numbering
-pub fn validate_sequence(
-    input_dir: &Path,
-    start: u32,
-    count: usize,
-) -> Result<Vec<String>> {
+pub fn validate_sequence(input_dir: &Path, start: u32, count: usize) -> Result<Vec<String>> {
     let mut files = Vec::new();
-    
+
     for i in 0..count {
         let frame_num = start + i as u32;
         let pattern = format!("{:04}", frame_num);
-        
+
         // Try to find the file
         let found = if let Ok(entries) = std::fs::read_dir(input_dir) {
-            entries
-                .filter_map(|e| e.ok())
-                .any(|e| {
-                    e.file_name()
-                        .to_string_lossy()
-                        .contains(&pattern)
-                        && e.path()
-                            .extension()
-                            .map(|ext| ext.to_ascii_uppercase() == "DNG")
-                            .unwrap_or(false)
-                })
+            entries.filter_map(|e| e.ok()).any(|e| {
+                e.file_name().to_string_lossy().contains(&pattern)
+                    && e.path()
+                        .extension()
+                        .map(|ext| ext.to_ascii_uppercase() == "DNG")
+                        .unwrap_or(false)
+            })
         } else {
             false
         };
@@ -80,7 +72,7 @@ pub fn validate_sequence(
             return Err(HyperlapseError::SequenceGap { frame: frame_num });
         }
     }
-    
+
     Ok(files)
 }
 
@@ -93,9 +85,9 @@ pub fn build_rawtherapee_cmd(
 ) -> Vec<String> {
     let mut cmd = vec![
         "rawtherapee-cli".to_string(),
-        "-j".to_string(),           // JPEG output
-        "-Y".to_string(),           // Fast pipeline
-        "-f".to_string(),           // Force output
+        "-j".to_string(), // JPEG output
+        "-Y".to_string(), // Fast pipeline
+        "-f".to_string(), // Force output
     ];
 
     if let Some(p) = profile {
@@ -114,16 +106,14 @@ pub fn build_rawtherapee_cmd(
 }
 
 /// Build ffmpeg command for hyperlapse assembly
-pub fn build_hyperlapse_cmd(
-    config: &ProcConfig,
-) -> Vec<String> {
+pub fn build_hyperlapse_cmd(config: &ProcConfig) -> Vec<String> {
     let basename = config.basename_pattern();
     let ext = config.extension_string().to_lowercase();
     let pattern = format!("{}_{}.{}", basename, "%04d", ext);
-    
+
     let mut cmd = vec![
         "ffmpeg".to_string(),
-        "-y".to_string(),                          // Overwrite
+        "-y".to_string(), // Overwrite
         "-hide_banner".to_string(),
         "-loglevel".to_string(),
         if config.verbose { "info" } else { "error" }.to_string(),
@@ -166,7 +156,7 @@ pub fn build_stabilize_detect_cmd(
 ) -> Vec<String> {
     let basename = config.basename_pattern();
     let ext = "jpg";
-    
+
     let mut cmd = vec![
         "ffmpeg".to_string(),
         "-y".to_string(),
@@ -208,7 +198,7 @@ pub fn build_stabilize_transform_cmd(
     params: &StabilizationParams,
 ) -> Vec<String> {
     let basename = config.basename_pattern();
-    
+
     let mut cmd = vec![
         "ffmpeg".to_string(),
         "-y".to_string(),

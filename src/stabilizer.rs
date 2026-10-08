@@ -1,5 +1,5 @@
-use crate::errors::{HyperlapseError, Result};
 use crate::config::{ProcConfig, StabilizationParams};
+use crate::errors::{HyperlapseError, Result};
 
 /// Stabilize a video using vidstab
 pub fn stabilize(input: &str, output: &str, trf: &str, params: &StabilizationParams) -> Result<()> {
@@ -56,11 +56,15 @@ pub fn verify_output(output_path: &str, expected_frames: usize) -> Result<()> {
 
     let output = Command::new("ffprobe")
         .args(&[
-            "-v", "error",
-            "-select_streams", "v:0",
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
             "-count_packets",
-            "-show_entries", "stream=nb_read_packets",
-            "-of", "csv=p=0",
+            "-show_entries",
+            "stream=nb_read_packets",
+            "-of",
+            "csv=p=0",
             output_path,
         ])
         .output()

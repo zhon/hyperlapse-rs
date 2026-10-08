@@ -67,4 +67,4 @@ impl HyperlapseError {
     fn with_context_from_string(original: String, context: &str) -> Self {
         HyperlapseError::ConfigError(format!("{}: {}", context, original))
     }
-    }
+}

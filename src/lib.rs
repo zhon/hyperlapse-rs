@@ -26,5 +26,8 @@ pub fn run(args: Args) -> Result<()> {
 
 /// Check if a command exists in PATH
 pub fn command_exists(name: &str) -> bool {
-    std::process::Command::new(name).arg("--version").output().is_ok()
+    std::process::Command::new(name)
+        .arg("--version")
+        .output()
+        .is_ok()
 }
